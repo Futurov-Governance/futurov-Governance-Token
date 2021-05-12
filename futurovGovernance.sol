@@ -1,10 +1,9 @@
 /**
- *Submitted for verification at BscScan.com on 2021-05-08
+ *Submitted for verification at BscScan.com on 2021-05-11
 */
 
-/**
-
- ███████╗██╗░░░██╗████████╗██╗░░░██╗██████╗░░█████╗░██╗░░░██╗
+/*
+███████╗██╗░░░██╗████████╗██╗░░░██╗██████╗░░█████╗░██╗░░░██╗
 ██╔════╝██║░░░██║╚══██╔══╝██║░░░██║██╔══██╗██╔══██╗██║░░░██║
 █████╗░░██║░░░██║░░░██║░░░██║░░░██║██████╔╝██║░░██║╚██╗░██╔╝
 ██╔══╝░░██║░░░██║░░░██║░░░██║░░░██║██╔══██╗██║░░██║░╚████╔╝░
@@ -24,14 +23,18 @@
 ░░░██║░░░██║░░██║██╔═██╗░██╔══╝░░██║╚████║
 ░░░██║░░░╚█████╔╝██║░╚██╗███████╗██║░╚███║
 ░░░╚═╝░░░░╚════╝░╚═╝░░╚═╝╚══════╝╚═╝░░╚══╝
-
-    4.2069% fee per transaction which 50% of so 2.10345 
-    goes to a dead wallet address (0x00…dead) - 25% goes 
-    to LP and 25% goes to all wallets
 */
 
 
-pragma solidity ^0.6.12;
+/* Tokenomics:
+        Total Fees: 4.2069%
+        --->Burn Fees: 2.10345%
+        --->Holders Rewards: 1.051725%
+        --->Lp Pool: 1.051725%
+*/
+
+
+pragma solidity 0.6.12;
 
 // SPDX-License-Identifier: Unlicensed
 
@@ -731,11 +734,11 @@ contract FuturovGovernanceToken is Context, IERC20, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "Futurov Governance Token ";
+    string private _name = "Futurov Governance Token";
     string private _symbol = "FTV";
     uint8 private _decimals = 18;
     
-    uint256 public _taxFee = 1051725;
+    uint256 public _taxFee = 1051725 ;
     uint256 private _previousTaxFee = _taxFee;
     
     uint256 public _liquidityFee = 1051725;
@@ -745,16 +748,16 @@ contract FuturovGovernanceToken is Context, IERC20, Ownable {
     uint256 private _previousBurnFee = _burnFee;
 
     uint256 public _marketingFee = 0;
-    address public marketingWallet = 0xA505ee6f1ce01cA181Ca1e90543C8FcAF24264bf;
+    address public marketingWallet = 0x81aB176915340b5228C0BFe861862ee6fc5eaD06;
     uint256 private _previousmarketingFee = _marketingFee;
 
-    IUniswapV2Router02 public immutable uniswapV2Router;
-    address public immutable uniswapV2Pair;
+    IUniswapV2Router02 public  uniswapV2Router;
+    address public  uniswapV2Pair;
     
     bool inSwapAndLiquify;
     bool public swapAndLiquifyEnabled = false;
 
-    uint256 public _maxTxAmount = 1000000 * 10**18;
+    uint256 public _maxTxAmount = 1000000 * 10**18;	
     uint256 private numTokensSellToAddToLiquidity = 2000*10**18;
     
     event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
@@ -774,7 +777,7 @@ contract FuturovGovernanceToken is Context, IERC20, Ownable {
     constructor () public {
         _rOwned[_msgSender()] = _rTotal;
         
-        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
          // Create a uniswap pair for this new token
         uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
             .createPair(address(this), _uniswapV2Router.WETH());
@@ -1117,8 +1120,11 @@ contract FuturovGovernanceToken is Context, IERC20, Ownable {
         _taxFee = 0;
         _liquidityFee = 0;
 
-        //Send transfers to burn and marketing wallet
-        _transferStandard(sender, address(0), burnAmt);
+        //If burnAddress has >= 7 Billion (total supply <= 1 Billion)
+        //don't take burnFee
+        if(balanceOf(address(0)) < 7 * 10**9 * 10**18){
+            _transferStandard(sender, address(0), burnAmt);
+        } 
         _transferStandard(sender, marketingWallet, marketingAmt);
 
         //Restore tax and liquidity fees
@@ -1196,6 +1202,14 @@ contract FuturovGovernanceToken is Context, IERC20, Ownable {
     
     function setmarketingWallet(address newWallet) external onlyOwner() {
         marketingWallet = newWallet;
+    }
+    
+    //New Pancakeswap router version?
+    //No problem, just change it!
+    function setRouterAddress(address newRouter) public onlyOwner() {
+        IUniswapV2Router02 _newPancakeRouter = IUniswapV2Router02(newRouter);
+        uniswapV2Pair = IUniswapV2Factory(_newPancakeRouter.factory()).createPair(address(this), _newPancakeRouter.WETH());
+        uniswapV2Router = _newPancakeRouter;
     }
    
     function setMaxTxPercent(uint256 maxTxPercent) external onlyOwner() {
